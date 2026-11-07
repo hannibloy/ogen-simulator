@@ -1,0 +1,331 @@
+<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><title>סימולטור עוגן</title><meta name="description" content="תרגול שיח QPR לצוותי חינוך, לפי חוזר מנכ&quot;ל 0473 ותדריך שפ&quot;י."><link rel="icon" href="img/logo.png"><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700&family=Rubik:wght@400;500;600&display=swap">
+<style>
+/* פריסה: מחברת פתוחה. עמוד ימין = לוח עבודה (לוגו, שלבים, תרחיש, פעולות). עמוד שמאל = תוכן (בחירות / צ'אט על דף שורות / משוב). בטלפון: עמוד אחד, מסך מלא.
+   עיצוב בעולם נייר אחד, במכוון בהיר בלבד. */
+:root{
+  --desk:#E9E4D6; --page-r:#FAFAF7; --page-l:#FBF9F2; --card:#FFFFFF; --spine-a:#E7E1CF; --spine-b:#CFC7B0;
+  --burgundy:#7D1C2A; --burgundy-2:#94303F;
+  --olive:#5C6228; --olive-wash:#E8EAD8; --olive-soft:#E3E8CD;
+  --sand:#F6EDD8; --gold:#C89B3C; --gold-text:#7A5C1E;
+  --text:#2B2C1E; --muted:#5E604B; --line:#E2DFD2; --line-2:#C9C5B4; --rule:rgba(201,197,180,.32);
+  --ok:#47561A; --ok-wash:#E7EDD5; --part:#7A5C1E; --part-wash:#F6EDD8; --again:#7D1C2A; --again-wash:#F4E4E4; --none-wash:#ECEAE2;
+  --note:#FFF4C2; --note-line:#E3C76A;
+  --font-ui:"Rubik","Segoe UI",Arial,sans-serif;
+  --font-head:"Frank Ruhl Libre","David Libre",Georgia,serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--desk);color:var(--text);font-family:var(--font-ui);font-size:16px;line-height:1.6}
+button,textarea,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+[hidden]{display:none!important}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* ===== המחברת ===== */
+.desk{height:100%;display:flex;align-items:center;justify-content:center;padding:20px}
+.book{position:relative;width:min(1160px,100%);height:min(720px,100%);display:flex;filter:drop-shadow(0 22px 40px rgba(60,40,20,.22))}
+.ribbon{position:absolute;top:-14px;right:346px;width:26px;height:120px;background:var(--burgundy);border-radius:0 0 4px 4px;z-index:3}
+.pr{width:380px;flex:none;background:var(--page-r);border-radius:0 22px 22px 0;border-top:6px solid var(--burgundy);padding:26px 28px 22px;display:flex;flex-direction:column;gap:16px;position:relative;overflow-y:auto;overflow-x:hidden}
+.spine{width:18px;flex:none;background:linear-gradient(to left,var(--spine-a),var(--spine-b) 50%,var(--spine-a))}
+.pl{flex:1;min-width:0;background:var(--page-l);border-radius:22px 0 0 22px;display:flex;flex-direction:column;overflow:hidden}
+.pr .watermark{position:absolute;left:-70px;bottom:-60px;width:300px;opacity:.16;mix-blend-mode:multiply;pointer-events:none}
+
+/* לוח העבודה */
+.brand{display:flex;align-items:center;gap:12px;position:relative}
+.brand .lg{width:62px;height:62px;border-radius:50%;background:var(--card);display:grid;place-items:center;box-shadow:0 0 0 1px var(--line);flex:none}
+.brand .lg img{width:50px;height:50px}
+.brand b{display:block;font-family:var(--font-head);font-size:28px;font-weight:700;color:var(--burgundy);line-height:1.05}
+.brand small{display:block;font-size:14px;color:var(--muted);margin-top:4px}
+.steps{display:flex;flex-direction:column;gap:9px;position:relative}
+.steps .lbl{font-size:13px;font-weight:600;color:var(--muted);letter-spacing:.03em}
+.step{display:flex;align-items:center;gap:12px;color:var(--muted)}
+.step .dot{width:28px;height:28px;border-radius:50%;border:1.5px solid var(--line-2);display:grid;place-items:center;font-size:14px;flex:none}
+.step.on{color:var(--text);font-weight:600}
+.step.on .dot{background:var(--burgundy);border-color:var(--burgundy);color:#fff}
+.step.done .dot{background:var(--olive-wash);border-color:var(--olive-wash);color:var(--olive);font-weight:700}
+.before{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:7px;font-size:15px;line-height:1.6;position:relative}
+.before h2{margin:0;font-size:16px;color:var(--burgundy)}
+.before p{margin:0}
+.before ul{margin:0;padding-inline-start:18px;display:flex;flex-direction:column;gap:3px}
+.before .soft{color:var(--muted)}
+.sccard{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;position:relative}
+.sccard img{display:block;width:100%;height:120px;object-fit:cover;mix-blend-mode:multiply}
+.sccard div{padding:10px 14px;font-size:15px;line-height:1.55}
+.sccard span{color:var(--muted)}
+.actions{margin-top:auto;display:flex;flex-direction:column;gap:8px;position:relative}
+.actions .two{display:flex;gap:8px}
+.btn{min-height:44px;border:1.5px solid var(--line);background:var(--card);border-radius:12px;padding:6px 12px;font-size:15px;flex:1}
+.btn.ol{border-color:var(--olive);background:transparent;color:var(--olive)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn[aria-expanded="true"]{background:var(--olive-wash);border-color:var(--olive)}
+.guide{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;font-size:14.5px;line-height:1.55;display:flex;flex-direction:column;gap:6px}
+.guide ul{margin:0;padding-inline-start:18px}
+.review{border:1.5px dashed var(--note-line);background:var(--note);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:8px;font-size:14px;position:relative}
+.review b{color:var(--gold-text)}
+.review label{display:flex;align-items:center;gap:8px;min-height:32px;cursor:pointer}
+.review input{width:18px;height:18px;accent-color:var(--olive)}
+.review .btn{background:var(--card);flex:none}
+
+/* עמוד התוכן */
+.scroll{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.hero{display:block;width:100%;height:150px;object-fit:cover;mix-blend-mode:multiply;opacity:.92}
+.homebody{padding:22px clamp(16px,4vw,48px) 32px;display:flex;flex-direction:column;gap:18px}
+.homebody h1{margin:0;font-family:var(--font-head);font-size:30px;color:var(--burgundy);text-wrap:balance;line-height:1.2}
+.levels{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.lv{min-height:64px;display:flex;align-items:center;gap:14px;padding:8px 16px;border:1.5px solid var(--line);background:var(--card);border-radius:16px;font-size:17px;text-align:start}
+.lv .ab{width:36px;height:36px;border-radius:50%;background:var(--sand);color:var(--gold-text);display:grid;place-items:center;font-weight:600;flex:none;font-size:15px}
+.lv .tx{flex:1;min-width:0;line-height:1.3}
+.lv .tx small{display:block;font-size:13.5px;color:var(--muted)}
+.lv[aria-checked="true"]{border:2px solid var(--olive);background:var(--olive-wash);font-weight:600}
+.lv[aria-checked="true"] .ab{background:var(--olive);color:#fff}
+.gend{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.gend > span{font-weight:600;color:var(--burgundy)}
+.pill{min-height:44px;padding:0 22px;border-radius:999px;border:1.5px solid var(--line);background:var(--card);font-size:15px}
+.pill[aria-checked="true"]{border:2px solid var(--olive);background:var(--olive-wash);font-weight:600}
+.cta{min-height:56px;border:0;border-radius:16px;background:var(--burgundy);color:#fff;font-size:18px;font-weight:600;box-shadow:0 8px 20px rgba(125,28,42,.22);width:100%}
+.cta:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
+.ghost{min-height:46px;border:1.5px solid var(--olive);background:transparent;color:var(--olive);border-radius:14px;font-weight:600;width:100%}
+.foot{font-size:13px;color:var(--muted);margin:0}
+.mob-before{display:none}
+
+/* צ'אט */
+.chead{flex:none;display:flex;align-items:center;gap:12px;padding:12px 24px;border-bottom:1px solid var(--line);background:var(--card)}
+.chead .av{width:42px;height:42px;border-radius:50%;background:var(--sand);color:var(--gold-text);display:grid;place-items:center;font-weight:600;font-size:18px;flex:none}
+.chead .who{flex:1;min-width:0;line-height:1.3}
+.chead .who b{display:block;font-size:17px}
+.chead .who span{font-size:13px;color:var(--muted)}
+.chead .mob{display:none;gap:6px}
+.ib{width:44px;height:44px;border-radius:50%;border:1.5px solid var(--line);background:var(--card);display:grid;place-items:center;color:var(--olive)}
+.ib svg{width:20px;height:20px}
+.ib:disabled{opacity:.35;cursor:not-allowed}
+.log{padding:22px clamp(14px,3vw,34px) 18px;display:flex;flex-direction:column;gap:12px;min-height:100%;background:repeating-linear-gradient(to bottom,transparent 0 35px,var(--rule) 35px 36px)}
+.mscene{display:none}
+.row{display:flex;flex-direction:column;gap:4px;max-width:78%}
+.row.s{align-self:flex-start;align-items:flex-start}
+.row.t{align-self:flex-end;align-items:flex-end}
+.msg{padding:10px 15px;box-shadow:0 1px 2px rgba(60,40,20,.08);white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.55}
+.msg .nm{display:block;font-size:12px;font-weight:600}
+.row.s .msg{background:var(--sand);border-radius:4px 18px 18px 18px}
+.row.s .msg .nm{color:var(--gold-text)}
+.row.t .msg{background:var(--olive);color:#fff;border-radius:18px 4px 18px 18px}
+.row.t .msg .nm{color:var(--olive-soft)}
+.row.t.act .msg{font-style:italic}
+.stage-dir{display:block;font-size:13px;color:var(--muted);font-style:italic}
+.narr{align-self:center;max-width:90%;text-align:center;background:var(--card);border:1px solid var(--line);color:var(--gold-text);border-radius:12px;padding:7px 16px;font-size:14.5px}
+.narr b{display:block;color:var(--burgundy);font-family:var(--font-head);font-size:16px}
+.narrwrap{align-self:center;display:flex;flex-direction:column;align-items:center;gap:4px;max-width:90%}
+.typing{align-self:flex-start;background:var(--sand);border-radius:4px 18px 18px 18px;padding:13px 16px;display:flex;gap:5px}
+.typing i{width:7px;height:7px;border-radius:50%;background:#B89A5E;animation:blink 1s infinite}
+.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+@keyframes blink{0%,80%,100%{opacity:.25}40%{opacity:1}}
+.endcard{align-self:stretch;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;text-align:center;display:flex;flex-direction:column;gap:10px;align-items:center}
+.endcard p{margin:0;color:var(--muted)}
+.endcard .cta{max-width:340px}
+.chip{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:1px 10px;font-size:12.5px;font-weight:600;font-style:normal}
+.chip.ok{background:var(--ok-wash);color:var(--ok)}.chip.part{background:var(--part-wash);color:var(--part)}.chip.again{background:var(--again-wash);color:var(--again)}.chip.none,.chip.probe{background:var(--none-wash);color:var(--muted)}
+.chip.probe{background:var(--ok-wash);color:var(--ok)}
+.composer{flex:none;border-top:1px solid var(--line);padding:10px 20px 14px;background:var(--card)}
+.hintbox{background:var(--sand);border-radius:12px;padding:9px 12px;margin-bottom:10px;font-size:15px;display:flex;gap:8px;align-items:flex-start}
+.hintbox b{color:var(--gold-text);flex:none}
+.hintbox p{margin:0;flex:1}
+.hintbox button{border:0;background:transparent;color:var(--gold-text);text-decoration:underline;font-size:13px;min-height:28px}
+.finishbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px;font-size:14px;color:var(--muted)}
+.finishbar button{min-height:40px;border:1.5px solid var(--burgundy);color:var(--burgundy);background:transparent;border-radius:12px;padding:4px 14px;font-weight:600}
+.dbg{font-size:12px;color:var(--muted);background:var(--none-wash);border-radius:999px;padding:1px 9px}
+.thinking{display:flex;flex-direction:column;align-items:center;gap:10px;padding:40px 10px;color:var(--muted);text-align:center}
+.check{list-style:none;padding:0!important;margin:0;display:flex;flex-direction:column;gap:8px}
+.check li{display:flex;gap:10px;align-items:flex-start}
+.check li span.bx{flex:none;width:22px;height:22px;border:2px solid var(--olive);border-radius:6px;margin-top:2px}
+.dil textarea{width:100%;min-height:90px;border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--card);resize:vertical}
+.dil .row2{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.dil .row2 button{min-height:44px;border:0;border-radius:12px;background:var(--olive);color:#fff;padding:0 18px;font-weight:600}
+.dil .ok{color:var(--ok);font-weight:600}
+.verdict{font-size:13px;font-weight:600}
+.opt{text-align:start;min-height:48px;border:1.5px solid var(--line);background:var(--page-l);border-radius:12px;padding:9px 12px;line-height:1.45;font-size:15px}
+.opt:hover{border-color:var(--olive)}
+.crow{display:flex;gap:10px;align-items:flex-end}
+.crow textarea{flex:1;min-width:0;min-height:46px;max-height:130px;resize:none;border:1.5px solid var(--line);border-radius:23px;padding:11px 16px;background:var(--card);color:var(--text)}
+.round{width:46px;height:46px;border-radius:50%;border:0;display:grid;place-items:center;flex:none}
+.round svg{width:22px;height:22px}
+.round.send{background:var(--burgundy);color:#fff}
+.round.lib{background:var(--sand);color:var(--gold-text)}
+.round.lib[aria-expanded="true"]{background:var(--gold);color:#fff}
+.round:disabled{opacity:.4;cursor:not-allowed}
+.hint{font-size:13px;color:var(--muted);margin:6px 6px 0}
+.warn{font-size:14px;color:var(--again);background:var(--again-wash);border-radius:10px;padding:6px 10px;margin:0 0 8px}
+
+/* הערות בדיקה */
+.nbtn{border:1px dashed var(--note-line);background:var(--note);color:var(--gold-text);border-radius:999px;font-size:12.5px;padding:2px 10px;min-height:28px}
+.nbtn:hover{background:#FFEDA0}
+.note{background:var(--note);border:1px solid var(--note-line);border-radius:10px;padding:6px 10px;font-size:14px;max-width:100%;display:flex;gap:8px;align-items:flex-start}
+.note p{margin:0;flex:1;white-space:pre-wrap;overflow-wrap:anywhere}
+.note button{border:0;background:transparent;color:var(--gold-text);font-size:13px;padding:0 4px;min-height:24px;text-decoration:underline}
+.nform{display:flex;flex-direction:column;gap:6px;width:min(440px,100%);background:var(--note);border:1px solid var(--note-line);border-radius:12px;padding:8px}
+.nform textarea{min-height:70px;border:1px solid var(--note-line);border-radius:8px;padding:8px;background:var(--card);resize:vertical}
+.nform .two{display:flex;gap:6px}
+.nform .two button{min-height:36px;border-radius:8px;border:1px solid var(--note-line);background:var(--card);padding:0 14px}
+.nform .two button.sv{background:var(--olive);border-color:var(--olive);color:#fff}
+
+/* משוב */
+.sum{padding:22px clamp(14px,3vw,36px) 32px;display:flex;flex-direction:column;gap:14px}
+.sum h2{font-family:var(--font-head);color:var(--burgundy);margin:0;font-size:26px;text-wrap:balance}
+.sum h3{font-family:var(--font-head);color:var(--burgundy);margin:0;font-size:18px}
+.tally{display:flex;gap:8px;flex-wrap:wrap}
+.tally .chip{font-size:14px;padding:3px 12px}
+.blk{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.blk p{margin:0}.blk ul{margin:0;padding-inline-start:20px;display:flex;flex-direction:column;gap:4px}
+.blk.disc{background:var(--sand);border-color:var(--sand)}
+.fstep{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.fstep-h{display:flex;gap:10px;align-items:flex-start;padding:12px 16px;background:var(--page-r);border-bottom:1px solid var(--line)}
+.num{flex:none;width:28px;height:28px;border-radius:50%;background:var(--burgundy);color:#fff;display:grid;place-items:center;font-size:14px;font-weight:600}
+.fstep-h .hd{flex:1;min-width:0}
+.fstep-h .hd b{display:block;font-size:13px;color:var(--muted);font-weight:600}
+.fstep-b{padding:12px 16px;display:flex;flex-direction:column;gap:10px;font-size:15px}
+.att{display:flex;gap:8px;align-items:flex-start}
+.att .chip{flex:none;margin-top:3px}
+.att .tx{flex:1;min-width:0}
+.att .src{font-size:12.5px;color:var(--muted)}
+.why{border-radius:10px;padding:9px 12px}
+.why.ok{background:var(--ok-wash)}.why.part{background:var(--part-wash)}.why.again{background:var(--again-wash)}.why.none{background:var(--none-wash)}
+.lab{display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:2px}
+.rec{background:var(--olive-wash);border-radius:10px;padding:9px 12px}
+.rulebox{background:var(--page-r);border:1px solid var(--line);border-radius:10px;padding:9px 12px}
+.rulebox b{font-family:var(--font-head);color:var(--burgundy)}
+.btns{display:flex;flex-direction:column;gap:8px}
+
+/* חלון ההערות */
+.drawer{position:fixed;inset:0;background:rgba(43,44,30,.35);display:flex;justify-content:flex-start;z-index:50}
+.drawer .panel{width:min(460px,100%);height:100%;background:var(--page-r);padding:18px 18px 24px;overflow-y:auto;display:flex;flex-direction:column;gap:12px;box-shadow:0 0 30px rgba(0,0,0,.2)}
+.drawer h2{margin:0;font-family:var(--font-head);color:var(--burgundy)}
+.drawer .grp{display:flex;flex-direction:column;gap:6px}
+.drawer .grp h3{margin:6px 0 0;font-size:15px}
+.drawer .it{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:14px;display:flex;flex-direction:column;gap:4px}
+.drawer .it q{quotes:none;color:var(--muted);font-size:13px}
+
+/* ===== טלפון: עמוד אחד ===== */
+@media (max-height:760px){.desk{padding:10px}}
+@media (max-width:860px),(max-height:540px){
+  .desk{padding:0;display:block}
+  .book{width:100%;height:100%;filter:none;flex-direction:column}
+  .ribbon,.spine,.pr .watermark{display:none}
+  .pr{width:100%;border-radius:0;padding:10px 16px;flex-direction:row;align-items:center;gap:10px;border-top-width:4px}
+  .pr > *:not(.brand){display:none}
+  .pr .brand .lg{width:40px;height:40px}.pr .brand .lg img{width:32px;height:32px}
+  .pr .brand b{font-size:21px}.pr .brand small{display:none}
+  .pl{border-radius:0;flex:1}
+  .book[data-scr="chat"] .pr,.book[data-scr="sum"] .pr{display:none}
+  .mob-before{display:flex}
+  .levels{grid-template-columns:1fr}
+  .hero{height:110px}
+  .homebody h1{font-size:24px}
+  .chead{padding:10px 12px}
+  .chead .mob{display:flex}
+  .mscene{display:block;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px;font-size:14.5px;color:var(--muted)}
+  .row{max-width:88%}
+  .composer{padding:8px 10px calc(10px + env(safe-area-inset-bottom,0px))}
+  .mguide{display:block}
+}
+.mguide{display:none}
+@media (prefers-reduced-motion:reduce){.typing i{animation:none;opacity:.7}}
+</style>
+
+<div class="desk" dir="rtl" lang="he">
+ <div class="book" id="book" data-scr="home">
+  <div class="ribbon" aria-hidden="true"></div>
+
+  <!-- עמוד ימין: לוח העבודה -->
+  <aside class="pr" aria-label="לוח העבודה">
+   <img class="watermark" src="img/anchor.jpg" alt="" aria-hidden="true">
+   <div class="brand"><div class="lg"><img src="img/logo.png" alt="סמל חני Bloy"></div><div><b>סימולטור עוגן</b><small>תרגול שיח QPR לצוותי חינוך</small></div></div>
+   <div class="steps" id="steps"></div>
+   <div class="before" id="before-r">
+    <h2>לפני שמתחילים</h2>
+    <p><b>זהו תרגול. אין כאן מבחן, ואין תשובה שתישמר בשמך.</b></p>
+    <ul>
+     <li>תלמיד או תלמידה יפנו אליך בשיחה.</li>
+     <li>עונים במילים שלכם, כמו בשיחה אמיתית. אם נתקעים, יש כפתור רמז.</li>
+     <li>במהלך השיחה אין סימונים ואין משוב. הוא מגיע רק בסוף.</li>
+     <li>בסוף: משוב מקצועי מותאם לשיחה שלכם, וצ'ק ליסט מהחוזר.</li>
+     <li>אין לכתוב שמות או פרטים מזהים של תלמידים אמיתיים.</li>
+    </ul>
+    <p class="soft">הנושא רגיש. מותר לעצור בכל רגע, לצאת מהחדר או לפנות ליועצת.</p>
+   </div>
+   <div class="sccard" id="sccard" hidden><img id="scimg" src="" alt=""><div><b id="scname"></b><br><span id="scbg"></span></div></div>
+   <div class="guide" id="guide-r" hidden></div>
+   <div class="review" id="review" hidden>
+    <b>מצב בדיקה (רק את רואה)</b>
+    <label><input type="checkbox" id="showcls"> להציג את מצב השיחה הפנימי</label>
+    <button class="btn" id="opennotes">ההערות שלי (<span id="ncount">0</span>)</button>
+    <button class="btn" id="opendil">דילמות מהסדנה (<span id="dcount">0</span>)</button>
+   </div>
+   <div class="actions" id="act-r" hidden>
+    <button class="btn" id="guidebtn" aria-expanded="false" aria-controls="guide-r">הנחיות התרגול</button>
+    <div class="two"><button class="btn ol" id="undo">→ צעד אחורה</button><button class="btn ol" id="redo">צעד קדימה ←</button></div>
+    <button class="btn ol" id="homebtn">דף הבית</button>
+   </div>
+  </aside>
+  <div class="spine" aria-hidden="true"></div>
+
+  <!-- עמוד שמאל: התוכן -->
+  <main class="pl">
+   <!-- בית -->
+   <section class="scroll" id="scr-home" aria-label="בחירת תרחיש">
+    <img class="hero" src="img/room.jpg" alt="איור צבעי מים: כיתה ריקה באור רך">
+    <div class="homebody">
+     <div class="before mob-before" id="before-m"></div>
+     <h1 id="lv-l">באיזה שלב גילאי תרצו להתאמן?</h1>
+     <div class="levels" role="radiogroup" aria-labelledby="lv-l" id="levels"></div>
+     <div class="gend" role="radiogroup" aria-labelledby="g-l">
+      <span id="g-l">איך לפנות אליך?</span>
+      <button class="pill" role="radio" aria-checked="false" data-g="f">מורה</button>
+      <button class="pill" role="radio" aria-checked="false" data-g="m">מורֶה</button>
+     </div>
+     <button class="cta" id="start" disabled>מתחילים בתרגול ←</button>
+     <button class="ghost" id="resume" hidden>חזרה לשיחה שהתחלתי</button>
+     <p class="foot">מבוסס על חוזר מנכ"ל 0473 ועל תדריך שפ"י "שאלת האובדנות QPR".</p>
+    </div>
+   </section>
+
+   <!-- שיחה -->
+   <section id="scr-chat" aria-label="שיחה" hidden style="display:flex;flex-direction:column;flex:1;min-height:0">
+    <header class="chead">
+     <span class="av" id="av" aria-hidden="true"></span>
+     <div class="who"><b id="cname"></b><span id="ccls"></span></div>
+     <div class="mob">
+      <button class="ib" id="m-guide" aria-label="הנחיות התרגול" title="הנחיות התרגול"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg></button>
+      <button class="ib" id="m-undo" aria-label="צעד אחורה" title="צעד אחורה"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 7l5 5-5 5"/><path d="M19 12H9a5 5 0 0 0 0 10h1"/></svg></button>
+      <button class="ib" id="m-home" aria-label="דף הבית" title="דף הבית"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11l8-7 8 7"/><path d="M6 10v10h12V10"/></svg></button>
+     </div>
+    </header>
+    <div class="guide mguide" id="guide-m" hidden></div>
+    <div class="scroll" id="logwrap"><div class="log" id="log" role="log" aria-live="polite"></div></div>
+    <div class="composer" id="composer">
+     <p class="warn" id="warn" hidden></p>
+     <div class="hintbox" id="hintbox" hidden></div>
+     <div class="finishbar" id="finishbar" hidden><span>אפשר לסיים בכל רגע ולעבור למשוב.</span><button id="finish">לסיים ולקבל משוב</button></div>
+     <div class="crow">
+      <button class="round lib" id="hintbtn" aria-expanded="false" aria-controls="hintbox" aria-label="רמז" title="רמז"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V16h5v-.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/></svg></button>
+      <label for="ta" class="sr">התגובה שלך</label>
+      <textarea id="ta" rows="1" placeholder="כתבו את התגובה שלכם..."></textarea>
+      <button class="round send" id="send" aria-label="שליחה" title="שליחה"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></button>
+     </div>
+     <p class="hint">אין לכתוב שמות או פרטים מזהים של תלמידים אמיתיים.</p>
+    </div>
+   </section>
+
+   <!-- משוב -->
+   <section class="scroll" id="scr-sum" aria-label="משוב מסכם" hidden><div class="sum" id="sum"></div></section>
+  </main>
+ </div>
+</div>
+<div class="drawer" id="drawer" hidden><div class="panel" role="dialog" aria-modal="true" aria-labelledby="dr-h" id="drpanel"></div></div>
+
+<script src="content.js"></script>
+<script src="cards.js"></script>
+<script src="engine.js"></script>
+
+</body></html>

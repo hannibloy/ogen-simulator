@@ -1,0 +1,17 @@
+# סימולטור עוגן
+
+תרגול שיח QPR לצוותי חינוך, לפי חוזר מנכ"ל 0473 ותדריך שפ"י "שאלת האובדנות QPR".
+פיתוח: חני Bloy, שפ"י.
+
+## מבנה
+- `index.html`, `content.js`, `cards.js`, `engine.js`: הסימולטור (אתר סטטי, בלי בנייה).
+- `img/`: לוגו ואיורי צבעי מים.
+- `api/chat.js`: פונקציית שרת ב-Vercel שפונה ל-Anthropic API. המפתח נשמר רק במשתנה הסביבה `ANTHROPIC_API_KEY`.
+
+## הפעלה ב-Vercel
+1. Import של הריפו הזה ב-Vercel (Framework: Other, בלי Build Command).
+2. Settings → Environment Variables: `ANTHROPIC_API_KEY` = המפתח מ-console.anthropic.com.
+3. אופציונלי: `MODEL_QUICK` ו-`MODEL_DEFAULT` להחלפת הדגמים.
+
+## פרטיות
+אין לכתוב בסימולטור שמות או פרטים מזהים של תלמידים אמיתיים. השיחה נשמרת רק בדפדפן של המשתמשת.
