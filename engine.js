@@ -71,6 +71,7 @@ const ERRMAP=e=>{const c=e&&e.code;
   if(c==="rate_limited")return "יותר מדי בקשות ברגע זה. חכו כמה שניות ושלחו שוב.";
   if(c==="aborted"||c==="timeout")return "התשובה התעכבה. שלחו שוב.";
   if(c==="no_key")return "האתר עדיין לא חובר לבינה (חסר מפתח API בהגדרות Vercel).";
+  if(c==="blocked")return "התשובה נחסמה על ידי מסנן התוכן של המודל. נסחו מחדש ושלחו שוב.";
   return "התלמיד לא הצליח לענות הפעם. שלחו שוב.";};
 function transcript(turns){
   const s=SC(),me=st.g==="m"?"המורה (גבר)":"המורה (אישה)";

@@ -10,8 +10,11 @@
 
 ## הפעלה ב-Vercel
 1. Import של הריפו הזה ב-Vercel (Framework: Other, בלי Build Command).
-2. Settings → Environment Variables: `ANTHROPIC_API_KEY` = המפתח מ-console.anthropic.com.
-3. אופציונלי: `MODEL_QUICK` ו-`MODEL_DEFAULT` להחלפת הדגמים.
+2. Settings → Environment Variables, אחד משניים:
+   - `GEMINI_API_KEY` = מפתח מ-aistudio.google.com (יש רמה חינמית), או
+   - `ANTHROPIC_API_KEY` = מפתח מ-console.anthropic.com.
+   כשיש שניהם, `PROVIDER` = `gemini` או `anthropic` בוחר.
+3. אופציונלי: `GEMINI_MODEL_QUICK`, `GEMINI_MODEL_DEFAULT`, `MODEL_QUICK`, `MODEL_DEFAULT` להחלפת הדגמים.
 
 ## פרטיות
 אין לכתוב בסימולטור שמות או פרטים מזהים של תלמידים אמיתיים. השיחה נשמרת רק בדפדפן של המשתמשת.
