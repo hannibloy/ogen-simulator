@@ -122,7 +122,12 @@ module.exports = async (req, res) => {
     if (out.status) return res.status(out.status).json({ code: out.code, error: out.error || out.code, provider });
     const result = extractJson(out.text);
     if (!result) { console.error("bad_json from", provider, String(out.text || "").slice(0, 300)); return res.status(502).json({ code: "bad_json", error: "model did not return JSON", provider }); }
-    console.log("chat ok", provider, tier, Date.now() - t0, "ms");
+    // נרמול: דגמים שונים מחזירים לפעמים "true" כמחרוזת או stance באותיות גדולות
+    if (result && typeof result === "object") {
+      for (const k of ["direct", "promise", "escort"]) if (k in result && typeof result[k] !== "boolean") result[k] = /^(true|yes|כן)$/i.test(String(result[k]).trim());
+      if (typeof result.stance === "string") result.stance = result.stance.trim().toLowerCase();
+    }
+    console.log("chat ok", provider, tier, Date.now() - t0, "ms", JSON.stringify(result).slice(0, 400));
     return res.status(200).json({ result, provider });
   } catch (e) {
     clearTimeout(timer);
