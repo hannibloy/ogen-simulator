@@ -48,8 +48,12 @@ async function callGemini(prompt, tier, signal) {
   const tried = [first, ...GEMINI_FALLBACKS.filter((m) => m !== first)];
   let last = null;
   for (const model of tried) {
-    last = await callGeminiModel(model, prompt, tier, signal, true);
-    if (last.status === 400 && last.badConfig) last = await callGeminiModel(model, prompt, tier, signal, false);
+    // שלוש רמות של בקשה: מלאה, מינימלית, ובסיסית. דגמים חדשים דוחים לפעמים שדות ישנים ב-"invalid argument".
+    for (const level of [2, 1, 0]) {
+      last = await callGeminiModel(model, prompt, tier, signal, level);
+      if (!(last.status === 400 && last.badConfig)) break;
+      console.error("gemini 400 at level", level, model, "retrying simpler");
+    }
     if (!last.status || last.status === 503) return last;
     if (last.busy) { console.error("gemini busy, trying next:", model); await new Promise((r) => setTimeout(r, 600)); continue; }
     if (last.notFound) { console.error("gemini model not available, trying next:", model); continue; }
@@ -57,18 +61,23 @@ async function callGemini(prompt, tier, signal) {
   }
   return last;
 }
-async function callGeminiModel(model, prompt, tier, signal, noThink) {
+async function callGeminiModel(model, prompt, tier, signal, level) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
   const r = await fetch(url, {
     method: "POST", signal,
     headers: { "content-type": "application/json", "x-goog-api-key": process.env.GEMINI_API_KEY },
-    body: JSON.stringify({
-      systemInstruction: { parts: [{ text: SYSTEM }] },
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
-      generationConfig: { temperature: tier === "default" ? 0.3 : 0.6, maxOutputTokens: tier === "default" ? 4000 : 1200, responseMimeType: "application/json", ...(noThink ? { thinkingConfig: { thinkingBudget: 0 } } : {}) },
-      safetySettings: ["HARM_CATEGORY_HARASSMENT", "HARM_CATEGORY_HATE_SPEECH", "HARM_CATEGORY_SEXUALLY_EXPLICIT", "HARM_CATEGORY_DANGEROUS_CONTENT"]
-        .map((category) => ({ category, threshold: "BLOCK_ONLY_HIGH" })),
-    }),
+    body: JSON.stringify(
+      level === 0
+        ? { contents: [{ role: "user", parts: [{ text: SYSTEM + "\n\n" + prompt }] }], generationConfig: { temperature: tier === "default" ? 0.3 : 0.6, maxOutputTokens: tier === "default" ? 4000 : 1500 } }
+        : level === 1
+        ? { systemInstruction: { parts: [{ text: SYSTEM }] }, contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: tier === "default" ? 0.3 : 0.6, maxOutputTokens: tier === "default" ? 4000 : 1500, responseMimeType: "application/json" } }
+        : {
+            systemInstruction: { parts: [{ text: SYSTEM }] },
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+            generationConfig: { temperature: tier === "default" ? 0.3 : 0.6, maxOutputTokens: tier === "default" ? 4000 : 1500, responseMimeType: "application/json", thinkingConfig: { thinkingBudget: 0 } },
+            safetySettings: ["HARM_CATEGORY_HARASSMENT", "HARM_CATEGORY_HATE_SPEECH", "HARM_CATEGORY_SEXUALLY_EXPLICIT", "HARM_CATEGORY_DANGEROUS_CONTENT"].map((category) => ({ category, threshold: "BLOCK_ONLY_HIGH" })),
+          }
+    ),
   });
   const data = await r.json().catch(() => ({}));
   if (r.status === 429) return { status: 429, code: "rate_limited" };
@@ -76,7 +85,7 @@ async function callGeminiModel(model, prompt, tier, signal, noThink) {
     const msg = data?.error?.message || "";
     console.error("gemini", r.status, model, msg);
     if (/api key|API_KEY|permission|unauthenticated/i.test(msg)) return { status: 503, code: "no_key" };
-    if (r.status === 400 && noThink && /think/i.test(msg)) return { status: 400, badConfig: true, error: msg };
+    if (r.status === 400 && level > 0) return { status: 400, badConfig: true, error: msg };
     return { status: 502, code: "upstream", error: msg || "upstream error" };
   }
   if (r.status === 503 || (r.status === 429 && /demand|capacity|overloaded/i.test(data?.error?.message || ""))) {
