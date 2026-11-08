@@ -5,7 +5,7 @@
 //   PROVIDER           "gemini" או "anthropic". בלי זה: Gemini אם יש לו מפתח, אחרת Anthropic.
 const MODELS = {
   anthropic: { quick: process.env.MODEL_QUICK || "claude-haiku-5-5", default: process.env.MODEL_DEFAULT || "claude-sonnet-5-5" },
-  gemini: { quick: process.env.GEMINI_MODEL_QUICK || "gemini-2.5-flash", default: process.env.GEMINI_MODEL_DEFAULT || "gemini-2.5-flash" },
+  gemini: { quick: process.env.GEMINI_MODEL_QUICK || "gemini-3.5-flash-lite", default: process.env.GEMINI_MODEL_DEFAULT || "gemini-3.8-flash" },
 };
 const MAX_PROMPT = 24000;
 const SYSTEM = "אתה מחזיר אך ורק אובייקט JSON תקין אחד, בלי טקסט לפניו או אחריו ובלי גדרות קוד.";
@@ -41,19 +41,23 @@ async function callAnthropic(prompt, tier, signal) {
   return { text: (data.content || []).filter((c) => c.type === "text").map((c) => c.text).join("\n") };
 }
 
-const GEMINI_FALLBACKS = ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.0-flash", "gemini-flash-latest"];
+// לפי הודעות ה-API של Google (נובמבר 2026): דגמי 2.x אינם זמינים למשתמשים חדשים.
+const GEMINI_FALLBACKS = ["gemini-3.5-flash-lite", "gemini-3.8-flash", "gemini-flash-latest", "gemini-flash-lite-latest"];
 async function callGemini(prompt, tier, signal) {
   const first = MODELS.gemini[tier];
   const tried = [first, ...GEMINI_FALLBACKS.filter((m) => m !== first)];
   let last = null;
   for (const model of tried) {
-    last = await callGeminiModel(model, prompt, tier, signal);
-    if (!(last.status === 502 && last.notFound)) return last;
-    console.error("gemini model not available, trying next:", model, last.error);
+    last = await callGeminiModel(model, prompt, tier, signal, true);
+    if (last.status === 400 && last.badConfig) last = await callGeminiModel(model, prompt, tier, signal, false);
+    if (!last.status || last.status === 503) return last;
+    if (last.busy) { console.error("gemini busy, trying next:", model); await new Promise((r) => setTimeout(r, 600)); continue; }
+    if (last.notFound) { console.error("gemini model not available, trying next:", model); continue; }
+    return last;
   }
   return last;
 }
-async function callGeminiModel(model, prompt, tier, signal) {
+async function callGeminiModel(model, prompt, tier, signal, noThink) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
   const r = await fetch(url, {
     method: "POST", signal,
@@ -61,7 +65,7 @@ async function callGeminiModel(model, prompt, tier, signal) {
     body: JSON.stringify({
       systemInstruction: { parts: [{ text: SYSTEM }] },
       contents: [{ role: "user", parts: [{ text: prompt }] }],
-      generationConfig: { temperature: tier === "default" ? 0.3 : 0.6, maxOutputTokens: tier === "default" ? 4000 : 1200, responseMimeType: "application/json", thinkingConfig: { thinkingBudget: 0 } },
+      generationConfig: { temperature: tier === "default" ? 0.3 : 0.6, maxOutputTokens: tier === "default" ? 4000 : 1200, responseMimeType: "application/json", ...(noThink ? { thinkingConfig: { thinkingBudget: 0 } } : {}) },
       safetySettings: ["HARM_CATEGORY_HARASSMENT", "HARM_CATEGORY_HATE_SPEECH", "HARM_CATEGORY_SEXUALLY_EXPLICIT", "HARM_CATEGORY_DANGEROUS_CONTENT"]
         .map((category) => ({ category, threshold: "BLOCK_ONLY_HIGH" })),
     }),
@@ -70,9 +74,14 @@ async function callGeminiModel(model, prompt, tier, signal) {
   if (r.status === 429) return { status: 429, code: "rate_limited" };
   if (r.status === 400 || r.status === 401 || r.status === 403) {
     const msg = data?.error?.message || "";
-    console.error("gemini", r.status, msg);
+    console.error("gemini", r.status, model, msg);
     if (/api key|API_KEY|permission|unauthenticated/i.test(msg)) return { status: 503, code: "no_key" };
+    if (r.status === 400 && noThink && /think/i.test(msg)) return { status: 400, badConfig: true, error: msg };
     return { status: 502, code: "upstream", error: msg || "upstream error" };
+  }
+  if (r.status === 503 || (r.status === 429 && /demand|capacity|overloaded/i.test(data?.error?.message || ""))) {
+    console.error("gemini", r.status, model, data?.error?.message);
+    return { status: 502, code: "upstream", busy: true, error: data?.error?.message || "high demand" };
   }
   if (r.status === 404) { console.error("gemini 404", model, data?.error?.message); return { status: 502, code: "upstream", notFound: true, error: data?.error?.message || "model not found" }; }
   if (!r.ok) { console.error("gemini", r.status, data?.error?.message); return { status: 502, code: "upstream", error: data?.error?.message || "upstream error" }; }
