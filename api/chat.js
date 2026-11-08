@@ -41,8 +41,19 @@ async function callAnthropic(prompt, tier, signal) {
   return { text: (data.content || []).filter((c) => c.type === "text").map((c) => c.text).join("\n") };
 }
 
+const GEMINI_FALLBACKS = ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.0-flash", "gemini-flash-latest"];
 async function callGemini(prompt, tier, signal) {
-  const model = MODELS.gemini[tier];
+  const first = MODELS.gemini[tier];
+  const tried = [first, ...GEMINI_FALLBACKS.filter((m) => m !== first)];
+  let last = null;
+  for (const model of tried) {
+    last = await callGeminiModel(model, prompt, tier, signal);
+    if (!(last.status === 502 && last.notFound)) return last;
+    console.error("gemini model not available, trying next:", model, last.error);
+  }
+  return last;
+}
+async function callGeminiModel(model, prompt, tier, signal) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
   const r = await fetch(url, {
     method: "POST", signal,
@@ -59,10 +70,12 @@ async function callGemini(prompt, tier, signal) {
   if (r.status === 429) return { status: 429, code: "rate_limited" };
   if (r.status === 400 || r.status === 401 || r.status === 403) {
     const msg = data?.error?.message || "";
+    console.error("gemini", r.status, msg);
     if (/api key|API_KEY|permission|unauthenticated/i.test(msg)) return { status: 503, code: "no_key" };
     return { status: 502, code: "upstream", error: msg || "upstream error" };
   }
-  if (!r.ok) return { status: 502, code: "upstream", error: data?.error?.message || "upstream error" };
+  if (r.status === 404) { console.error("gemini 404", model, data?.error?.message); return { status: 502, code: "upstream", notFound: true, error: data?.error?.message || "model not found" }; }
+  if (!r.ok) { console.error("gemini", r.status, data?.error?.message); return { status: 502, code: "upstream", error: data?.error?.message || "upstream error" }; }
   const cand = (data.candidates || [])[0];
   if (!cand || !cand.content) return { status: 502, code: "blocked", error: data?.promptFeedback?.blockReason || cand?.finishReason || "no candidate" };
   return { text: (cand.content.parts || []).map((p) => p.text || "").join("\n") };
@@ -88,11 +101,12 @@ module.exports = async (req, res) => {
     clearTimeout(timer);
     if (out.status) return res.status(out.status).json({ code: out.code, error: out.error || out.code, provider });
     const result = extractJson(out.text);
-    if (!result) return res.status(502).json({ code: "bad_json", error: "model did not return JSON", provider });
+    if (!result) { console.error("bad_json from", provider, String(out.text || "").slice(0, 300)); return res.status(502).json({ code: "bad_json", error: "model did not return JSON", provider }); }
     return res.status(200).json({ result, provider });
   } catch (e) {
     clearTimeout(timer);
     const aborted = e && e.name === "AbortError";
+    console.error("chat error", provider, String((e && e.message) || e));
     return res.status(aborted ? 504 : 502).json({ code: aborted ? "timeout" : "server", error: String((e && e.message) || e) });
   }
 };

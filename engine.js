@@ -64,7 +64,7 @@ let sampleFn=null;
 if(!(window.claude&&claude.use)){sampleFn={json:async(prompt,o={})=>{
   const r=await fetch("/api/chat",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({prompt,tier:o.modelTier||"quick"}),signal:o.signal});
   let j=null;try{j=await r.json();}catch(_){}
-  if(!r.ok){const err=new Error((j&&j.error)||"server");err.code=(j&&j.code)||(r.status===429?"rate_limited":"server");throw err;}
+  if(!r.ok){const err=new Error((j&&j.error)||"server");err.code=(j&&j.code)||(r.status===429?"rate_limited":"server");err.detail=(j&&j.error)||"";console.error("api/chat",r.status,j);throw err;}
   return j&&j.result;}};}
 const ERRMAP=e=>{const c=e&&e.code;
   if(c==="not_granted")return "כדי שהתלמיד יענה, צריך לאשר לסימולטור להשתמש ב-Claude. לחצו שוב על שליחה ואשרו.";
@@ -72,7 +72,7 @@ const ERRMAP=e=>{const c=e&&e.code;
   if(c==="aborted"||c==="timeout")return "התשובה התעכבה. שלחו שוב.";
   if(c==="no_key")return "האתר עדיין לא חובר לבינה (חסר מפתח API בהגדרות Vercel).";
   if(c==="blocked")return "התשובה נחסמה על ידי מסנן התוכן של המודל. נסחו מחדש ושלחו שוב.";
-  return "התלמיד לא הצליח לענות הפעם. שלחו שוב.";};
+  return "התלמיד לא הצליח לענות הפעם. שלחו שוב."+(e&&e.detail?" ("+String(e.detail).slice(0,120)+")":"");};
 function transcript(turns){
   const s=SC(),me=st.g==="m"?"המורה (גבר)":"המורה (אישה)";
   const out=[];turns.forEach(t=>{if(t.who==="t")out.push(`${me}: ${t.text}`);else if(t.who==="s")out.push(`${s.name}: ${g(t.text)}`);else out.push(`[מצב: ${g(t.text)}]`);});
