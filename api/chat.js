@@ -30,7 +30,7 @@ async function callAnthropic(prompt, tier, signal) {
     method: "POST", signal,
     headers: { "content-type": "application/json", "x-api-key": process.env.ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01" },
     body: JSON.stringify({
-      model: MODELS.anthropic[tier], max_tokens: tier === "default" ? 2000 : 400, temperature: tier === "default" ? 0.3 : 0.6,
+      model: MODELS.anthropic[tier], max_tokens: tier === "default" ? 2000 : 2500, temperature: 0.3,
       system: SYSTEM, messages: [{ role: "user", content: prompt }],
     }),
   });
@@ -68,13 +68,13 @@ async function callGeminiModel(model, prompt, tier, signal, level) {
     headers: { "content-type": "application/json", "x-goog-api-key": process.env.GEMINI_API_KEY },
     body: JSON.stringify(
       level === 0
-        ? { contents: [{ role: "user", parts: [{ text: SYSTEM + "\n\n" + prompt }] }], generationConfig: { temperature: tier === "default" ? 0.3 : 0.6, maxOutputTokens: tier === "default" ? 4000 : 1500 } }
+        ? { contents: [{ role: "user", parts: [{ text: SYSTEM + "\n\n" + prompt }] }], generationConfig: { temperature: 0.3, maxOutputTokens: tier === "default" ? 4000 : 2500 } }
         : level === 1
-        ? { systemInstruction: { parts: [{ text: SYSTEM }] }, contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: tier === "default" ? 0.3 : 0.6, maxOutputTokens: tier === "default" ? 4000 : 1500, responseMimeType: "application/json" } }
+        ? { systemInstruction: { parts: [{ text: SYSTEM }] }, contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.3, maxOutputTokens: tier === "default" ? 4000 : 2500, responseMimeType: "application/json" } }
         : {
             systemInstruction: { parts: [{ text: SYSTEM }] },
             contents: [{ role: "user", parts: [{ text: prompt }] }],
-            generationConfig: { temperature: tier === "default" ? 0.3 : 0.6, maxOutputTokens: tier === "default" ? 4000 : 1500, responseMimeType: "application/json", thinkingConfig: { thinkingBudget: 0 } },
+            generationConfig: { temperature: 0.3, maxOutputTokens: tier === "default" ? 4000 : 2500, responseMimeType: "application/json", thinkingConfig: { thinkingBudget: 0 } },
             safetySettings: ["HARM_CATEGORY_HARASSMENT", "HARM_CATEGORY_HATE_SPEECH", "HARM_CATEGORY_SEXUALLY_EXPLICIT", "HARM_CATEGORY_DANGEROUS_CONTENT"].map((category) => ({ category, threshold: "BLOCK_ONLY_HIGH" })),
           }
     ),
