@@ -61,7 +61,7 @@ async function callGeminiModel(model, prompt, tier, signal) {
     body: JSON.stringify({
       systemInstruction: { parts: [{ text: SYSTEM }] },
       contents: [{ role: "user", parts: [{ text: prompt }] }],
-      generationConfig: { temperature: tier === "default" ? 0.3 : 0.6, maxOutputTokens: tier === "default" ? 4000 : 1200, responseMimeType: "application/json" },
+      generationConfig: { temperature: tier === "default" ? 0.3 : 0.6, maxOutputTokens: tier === "default" ? 4000 : 1200, responseMimeType: "application/json", thinkingConfig: { thinkingBudget: 0 } },
       safetySettings: ["HARM_CATEGORY_HARASSMENT", "HARM_CATEGORY_HATE_SPEECH", "HARM_CATEGORY_SEXUALLY_EXPLICIT", "HARM_CATEGORY_DANGEROUS_CONTENT"]
         .map((category) => ({ category, threshold: "BLOCK_ONLY_HIGH" })),
     }),
@@ -93,6 +93,8 @@ module.exports = async (req, res) => {
   const prompt = body && typeof body.prompt === "string" ? body.prompt : "";
   if (!prompt || prompt.length > MAX_PROMPT) return res.status(400).json({ code: "bad_request", error: "prompt missing or too long" });
   const tier = body.tier === "default" ? "default" : "quick";
+  const t0 = Date.now();
+  console.log("chat start", provider, tier, prompt.length);
 
   const ctl = new AbortController();
   const timer = setTimeout(() => ctl.abort(), tier === "default" ? 55000 : 28000);
@@ -102,6 +104,7 @@ module.exports = async (req, res) => {
     if (out.status) return res.status(out.status).json({ code: out.code, error: out.error || out.code, provider });
     const result = extractJson(out.text);
     if (!result) { console.error("bad_json from", provider, String(out.text || "").slice(0, 300)); return res.status(502).json({ code: "bad_json", error: "model did not return JSON", provider }); }
+    console.log("chat ok", provider, tier, Date.now() - t0, "ms");
     return res.status(200).json({ result, provider });
   } catch (e) {
     clearTimeout(timer);
