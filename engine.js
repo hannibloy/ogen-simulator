@@ -13,11 +13,17 @@ const VERD={ok:{c:"ok",i:"✓",l:"נעשה היטב"},part:{c:"part",i:"⚠",l:"
 const GUIDE_HTML=`<p style="margin:0"><b>זהו תרגול. אין כאן מבחן, ואין תשובה שתישמר בשמך.</b></p><ul><li>עונים במילים שלכם, כמו בשיחה אמיתית.</li><li>אם נתקעים, כפתור הנורה נותן רמז לכיוון.</li><li>תמיד אפשר לחזור צעד אחורה.</li><li>המשוב מגיע רק בסוף השיחה.</li><li>אין לכתוב שמות או פרטים מזהים של תלמידים אמיתיים.</li></ul><p style="margin:0;color:var(--muted)">מותר לעצור בכל רגע, לצאת מהחדר או לפנות ליועצת.</p>`;
 
 /* ---------- מצב ---------- */
-const st={scen:null,g:null,turns:[],redo:[],hints:[],done:false,busy:false,started:false,fb:null,fbFor:-1,_sc:null,_g:null,review:false,debug:false,noteOpen:null,hintOpen:false};
+const st={scen:null,g:null,r:"teacher",turns:[],redo:[],hints:[],done:false,busy:false,started:false,fb:null,fbFor:-1,_sc:null,_g:null,review:false,debug:false,noteOpen:null,hintOpen:false};
 const SC=()=>S[st.scen], CD=()=>C[st.scen];
 const g=s=>String(s??"").replace(/\{([^|}]*)\|([^}]*)\}/g,(_,f,m)=>st.g==="m"?m:f);
-function save(){try{localStorage.setItem("ogen-v10",JSON.stringify({scen:st.scen,g:st.g,turns:st.turns,hints:st.hints,done:st.done,promised:!!st.promised}));}catch(e){}}
-function load(){try{const v=JSON.parse(localStorage.getItem("ogen-v10")||"null");if(v&&S[v.scen]&&Array.isArray(v.turns)){Object.assign(st,{scen:v.scen,g:v.g,turns:v.turns,hints:v.hints||[],done:!!v.done,promised:!!v.promised,started:true});}}catch(e){}}
+/* גרסה 12: תפקיד המשתתף/ת. משפיע על הפנייה בפרומפט, על דילוג עוגנים שמתייחסים ליועצת כגורם שלישי, ועל הרמזים. העוגנים עצמם אינם משתנים. */
+const ROLES={teacher:{f:"המורה",m:"המורה",desc:"מחנך/ת או מורה"},counselor:{f:"היועצת",m:"היועץ",desc:"יועץ/ת חינוכי/ת"},staff:{f:"אשת הצוות",m:"איש הצוות",desc:"איש/אשת צוות חינוכי"}};
+const roleName=()=>(ROLES[st.r]||ROLES.teacher)[st.g==="m"?"m":"f"];
+const skipAnchor=id=>{const a=CD().anchors[id];return !!(a&&a.skipFor&&a.skipFor.includes(st.r));};
+/* ליועצ/ת: הרמזים מדברים על המנהלת והפסיכולוג/ית במקום על היועצת */
+const roleHint=h=>st.r==="counselor"?String(h).replace(/ליועצת או לאדם אחר/g,"למנהלת או לאדם אחר").replace(/ליועצת/g,"למנהלת").replace(/היועצת לא כאן/g,"המנהלת לא כאן").replace(/היועצת/g,"המנהלת"):h;
+function save(){try{localStorage.setItem("ogen-v10",JSON.stringify({scen:st.scen,g:st.g,r:st.r,turns:st.turns,hints:st.hints,done:st.done,promised:!!st.promised}));}catch(e){}}
+function load(){try{const v=JSON.parse(localStorage.getItem("ogen-v10")||"null");if(v&&S[v.scen]&&Array.isArray(v.turns)){Object.assign(st,{scen:v.scen,g:v.g,r:v.r||"teacher",turns:v.turns,hints:v.hints||[],done:!!v.done,promised:!!v.promised,started:true});}}catch(e){}}
 const teacherTurns=()=>st.turns.filter(t=>t.who==="t").length;
 const usedAnchors=()=>new Set(st.turns.filter(t=>t.anchor).map(t=>t.anchor));
 function anchorAvailable(id,used){
@@ -33,9 +39,10 @@ $("before-m").innerHTML=$("before-r").innerHTML;
 $("levels").innerHTML=order.map(k=>{const s=S[k];return `<button class="lv" role="radio" aria-checked="false" data-sc="${k}"><span class="ab">${ABBR[k]}</span><span class="tx">${esc(s.lvl)}<small>${esc(s.cls)} | ${esc(s.name)}</small></span></button>`;}).join("");
 document.querySelectorAll("[data-sc]").forEach(b=>b.onclick=()=>{document.querySelectorAll("[data-sc]").forEach(x=>x.setAttribute("aria-checked",String(x===b)));st._sc=b.dataset.sc;ready();});
 document.querySelectorAll("[data-g]").forEach(b=>b.onclick=()=>{document.querySelectorAll("[data-g]").forEach(x=>x.setAttribute("aria-checked",String(x===b)));st._g=b.dataset.g;ready();});
-function ready(){$("start").disabled=!(st._sc&&st._g);}
+document.querySelectorAll("[data-r]").forEach(b=>b.onclick=()=>{document.querySelectorAll("[data-r]").forEach(x=>x.setAttribute("aria-checked",String(x===b)));st._r=b.dataset.r;ready();});
+function ready(){$("start").disabled=!(st._sc&&st._g&&st._r);}
 function fresh(){st.promised=false;st.turns=[];st.redo=[];st.hints=[];st.done=false;st.fb=null;st.fbFor=-1;st.hintOpen=false;(CD().open||[]).forEach(id=>st.turns.push(anchorTurn(id)));save();}
-$("start").onclick=()=>{st.scen=st._sc;st.g=st._g;st.started=true;fresh();openChat();};
+$("start").onclick=()=>{st.scen=st._sc;st.g=st._g;st.r=st._r||"teacher";st.started=true;fresh();openChat();};
 $("resume").onclick=()=>openChat();
 function goHome(){show("home");$("resume").hidden=!st.started;}
 $("homebtn").onclick=goHome;$("m-home").onclick=goHome;
@@ -74,7 +81,7 @@ const ERRMAP=e=>{const c=e&&e.code;
   if(c==="blocked")return "התשובה נחסמה על ידי מסנן התוכן של המודל. נסחו מחדש ושלחו שוב.";
   return "התלמיד לא הצליח לענות הפעם. שלחו שוב."+(e&&e.detail?" ("+String(e.detail).slice(0,120)+")":"");};
 function transcript(turns){
-  const s=SC(),me=st.g==="m"?"המורה (גבר)":"המורה (אישה)";
+  const s=SC(),me=roleName();
   const out=[];turns.forEach(t=>{if(t.who==="t")out.push(`${me}: ${t.text}`);else if(t.who==="s")out.push(`${s.name}: ${g(t.text)}`);else out.push(`[מצב: ${g(t.text)}]`);});
   return out.join("\n");
 }
@@ -88,9 +95,10 @@ function flowState(){
   const f=CD().flow,used=usedAnchors();
   const expDone=used.has(f.explicit.direct)||used.has(f.explicit.spont);
   const preLeft=f.pre.filter(id=>!used.has(id));
-  const postLeft=f.post.filter(x=>Array.isArray(x)?!x.some(id=>used.has(id)):!used.has(x));
+  const postLeft=f.post.filter(x=>Array.isArray(x)?!x.some(id=>used.has(id)||skipAnchor(id)):!(used.has(x)||skipAnchor(x)));
   return {f,used,expDone,preLeft,postLeft};
 }
+function recentHolds(n){return st.turns.filter(t=>t.who==="s"&&t.gen).slice(-n).map(t=>g(t.text));}
 function lastStudentWasHold(){for(let i=st.turns.length-1;i>=0;i--){const t=st.turns[i];if(t.who==="s"||t.who==="n"&&t.anchor)return !!t.hold;}return false;}
 async function studentTurn(next,lastText,expDone){
   const s=SC(),c=CD(),n=s.name;
@@ -101,8 +109,9 @@ async function studentTurn(next,lastText,expDone){
   const holdPhase=expDone
     ?`אחרי הגילוי: אם המורה עוד לא הציעה ללכת יחד למבוגר שיכול לעזור, ה-hold מבטא פחד או שאלה ("ומה עכשיו?", "את לא הולכת, נכון?"). אם המורה אמרה שהיא הולכת ומשאירה את ${n} לבד, ${n} מפחד/ת ואומר/ת זאת.`
     :`לפני הגילוי: אם המורה הייתה קרה או מבטלת, ${n} מתכנס/ת ומקטין/ה ("סתם", "לא משנה") אבל משאיר/ה סימן קטן.`;
+  const who=roleName(),holds=recentHolds(3);
   const prompt=`# תפקיד
-את/ה משחק/ת את ${n} בסימולציית תרגול לצוותי חינוך (מניעת אובדנות, לפי תדריך QPR של שפ"י וחוזר מנכ"ל 0473). המורה ${st.g==="m"?"גבר: פנה אליו בלשון זכר":"אישה: פנה אליה בלשון נקבה"}. את/ה רק התלמיד/ה: לא מנחה, לא מורה, לא מסביר/ה.
+את/ה משחק/ת את ${n} בסימולציית תרגול לצוותי חינוך (מניעת אובדנות, לפי תדריך QPR של שפ"י וחוזר מנכ"ל 0473). מולך ${who} (${(ROLES[st.r]||ROLES.teacher).desc}). ${st.g==="m"?"פנה אליו בלשון זכר":"פנה אליה בלשון נקבה"}. בכל מקום שכתוב כאן "המורה", הכוונה ל${who}. את/ה רק התלמיד/ה: לא מנחה, לא מורה, לא מסביר/ה.
 
 # כרטיס הדמות
 ${c.card}
@@ -110,8 +119,11 @@ ${c.card}
 # השיחה עד עכשיו (מהישן לחדש)
 ${transcript(st.turns)}
 
-# ההודעה האחרונה של המורה (זו ההודעה היחידה שמסווגים)
-«${lastText}»
+# ההודעה האחרונה של ${who} (זו ההודעה היחידה שמסווגים)
+«${lastText}»${holds.length?`
+
+# תגובות שכבר נאמרו על ידי ${n} בשיחה (אסור לחזור עליהן או על ניסוח דומה להן)
+${holds.map(h=>"- "+h).join("\n")}`:""}
 
 # שלב השיחה
 ${phase}
@@ -140,7 +152,7 @@ ${nextTxt}
 
 5. lead: 0 עד 6 מילים של ${n} שמחברות בטבעיות בין מה שהמורה כתבה לבין המשפט המאושר הבא. לא חוזר על תוכן המשפט ולא מוסיף מידע. מותר ריק. דוגמאות: "...", "(מושך בכתפיים)", "לא יודע.", "(אחרי שתיקה)".
 
-6. hold: משפט אחד קצר (עד 12 מילים) של ${n} למקרה שהוא/היא מהסס/ת ולא מתקדם/ת. מגיב/ה למה שהמורה כתבה בפועל, נשאר/ת בדמות ובשפה של הגיל, משאיר/ה פתח קטן (רמז, שתיקה, חצי משפט), לא חוזר/ת על משפט שכבר נאמר בשיחה, ולא מגלה את תוכן המשפט המאושר הבא.
+6. hold: משפט אחד קצר (עד 12 מילים) של ${n}, תגובה חופשית וטבעית למה שנכתב בהודעה האחרונה, כמו נער/ה אמיתי/ת: מתייחס/ת לתוכן הספציפי של ההודעה (מילה, שאלה, הצעה שנאמרה), נשאר/ת בדמות ובשפה של הגיל, משאיר/ה פתח קטן (רמז, שתיקה, חצי משפט), לא חוזר/ת על משפט שכבר נאמר בשיחה ולא על ניסוח דומה לו, ולא מגלה את תוכן המשפט המאושר הבא. אם המורה שאל/ה שאלה, ה-hold עונה עליה בקצרה (או מתחמק ממנה באופן אנושי), לא מתעלם ממנה.
    ${holdPhase}
    אם ההודעה offtopic: hold הוא בלבול קצר של תלמיד/ה ("מה?", "לא הבנתי").
 
@@ -190,9 +202,12 @@ async function send(){
       else if(!f.needDirect&&!fs.preLeft.length&&(stance!=="cold"&&stance!=="offtopic"||lastStudentWasHold()))release=f.explicit.direct;
       else if(fs.preLeft.length&&(stance==="warm"||stance==="neutral"||lastStudentWasHold()))release=fs.preLeft[0];
     }else if(planned){
-      const needEsc=!!CD().anchors[planned].needEscort;
-      if(needEsc)release=escort?planned:null;
-      else if(stance!=="offtopic"&&(stance!=="cold"||lastStudentWasHold()))release=planned;
+      /* גרסה 12: אחרי הגילוי אין שער. הנער מגיב קודם בחופשיות למה שנאמר לו, והעוגן הבא מגיע בתור שאחרי,
+         או מיד כשהמורה מציע/ה ללכת יחד או מזכיר/ה מבוגר שיכול לעזור. לעולם לא שני תורי "החזקה" ברצף. */
+      if(stance==="offtopic")release=lastStudentWasHold()?planned:null;
+      else if(stance==="cold")release=lastStudentWasHold()?planned:null;
+      else if(escort||lastStudentWasHold()||ESCORT_HINT_RE.test(text))release=planned;
+      else release=null;
     }
     if(release&&stance==="offtopic"&&!lastStudentWasHold()&&!(release===f.explicit.spont))release=null;
     /* תיאור מצב שנוצר בשיחה מוצג רק אם המורה יזמה מעבר, ולא באותו תור שבו משוחרר עוגן תיאור מצב (#) */
@@ -225,7 +240,7 @@ function redo(){if(st.busy||!st.redo.length)return;st.turns.push(...st.redo.pop(
 $("undo").onclick=undo;$("m-undo").onclick=undo;$("redo").onclick=redo;
 $("hintbtn").onclick=()=>{
   st.hintOpen=!st.hintOpen;
-  if(st.hintOpen){const used=[...usedAnchors()];const last=st.turns.filter(t=>t.anchor).map(t=>t.anchor).pop();const h=CD().hints[last]||CD().hints._start||"מה התלמיד אומר לך עכשיו, ומה הוא צריך ממך?";st.hints.push({at:teacherTurns(),text:h});save();}
+  if(st.hintOpen){const used=[...usedAnchors()];const last=st.turns.filter(t=>t.anchor).map(t=>t.anchor).pop();const h=roleHint(CD().hints[last]||CD().hints._start||"מה התלמיד אומר לך עכשיו, ומה הוא צריך ממך?");st.hints.push({at:teacherTurns(),text:h});save();}
   render();
 };
 $("finish").onclick=()=>summary();
@@ -233,7 +248,7 @@ $("finish").onclick=()=>summary();
 /* ---------- תצוגת השיחה ---------- */
 function openChat(){
   const s=SC();
-  $("av").textContent=s.name[0];$("cname").textContent=s.name;$("ccls").textContent=s.cls+" | "+s.lvl;
+  $("av").textContent=s.name[0];$("cname").textContent=s.name;$("ccls").textContent=s.cls+" | "+s.lvl+" | "+(st.g==="m"?"אתה ":"את ")+roleName();
   $("scimg").src="img/"+s.img+".jpg";$("scimg").alt=s.alt;$("scname").textContent=s.name+", "+s.cls;$("scbg").textContent=g(s.bg);
   warn("");show("chat");render();
 }
@@ -278,8 +293,12 @@ async function getFeedback(){
    חלקי: ${n.rub.part.d}
    שגוי: ${n.rub.again.d}
    ניסוח מאושר לדוגמה: ${g(okOpt[0])}`;}).join("\n");
+  const naNodes=Object.values(c.anchors).filter(a=>a.skipFor&&a.skipFor.includes(st.r)&&Number.isInteger(a.node)).map(a=>a.node);
+  const roleNote=st.r==="counselor"
+    ?`המתרגל/ת הוא/היא היועץ/ת החינוכי/ת של בית הספר. לכן, בכל מקום שנקודות הבדיקה או הניסוחים לדוגמה מדברים על "ללכת ליועצת" או "להפנות ליועצת", יש לקרוא: לשתף מיד את המנהלת (6.3), להיוועץ בפסיכולוג/ית השפ"ח ולהפנות להערכה (6.1ג, 6.1ו), וליידע את ההורים (6.1ד), תוך השגחה ולא להשאיר לבד (6.1ב). אין לדרוש מהיועץ/ת "ללכת ליועצת".${naNodes.length?` נקודות הבדיקה ${naNodes.join(", ")} אינן רלוונטיות לתפקיד: סמן/י להן verdict "na".`:""}`
+    :st.r==="staff"?`המתרגל/ת הוא/היא איש/אשת צוות חינוכי (לא מחנך/ת ולא יועץ/ת). הדרישות זהות: לא להשאיר לבד, ללוות ליועצת או למנהלת, לא להבטיח סוד.`:"";
   const prompt=`# תפקיד
-את/ה מנחה מקצועית של שפ"י (שירות פסיכולוגי ייעוצי). את/ה נותנת משוב לאיש צוות חינוכי שתרגל שיחה עם תלמיד/ה במצוקה, לפי חוזר מנכ"ל 0473 ותדריך "שאלת האובדנות QPR". המשוב בעברית, מכבד, מחזק ומדויק, בלי שיפוטיות, בלי קו מפריד ארוך. פנייה ל${st.g==="m"?"גבר (אתה)":"אישה (את)"}.
+את/ה מנחה מקצועית של שפ"י (שירות פסיכולוגי ייעוצי). את/ה נותנת משוב ל${roleName()} שתרגל/ה שיחה עם תלמיד/ה במצוקה, לפי חוזר מנכ"ל 0473 ותדריך "שאלת האובדנות QPR". המשוב בעברית, מכבד, מחזק ומדויק, בלי שיפוטיות, בלי קו מפריד ארוך. פנייה ל${st.g==="m"?"גבר (אתה)":"אישה (את)"}.${roleNote?"\n\n# תפקיד המתרגל/ת\n"+roleNote:""}
 
 # הרקע
 ${g(s.bg)}
@@ -333,7 +352,8 @@ function drawSummary(){
   const byI={};(fb.points||[]).forEach(p=>{if(Number.isInteger(p.i))byI[p.i]=p;});
   const tally={ok:0,part:0,miss:0};
   const blocks=fb.error?"":s.nodes.map((n,i)=>{
-    const p=byI[i]||{verdict:"na"};const v=VERD[p.verdict]?p.verdict:"na";if(tally[v]!=null)tally[v]++;
+    const skipped=Object.values(CD().anchors).some(a=>a.node===i&&a.skipFor&&a.skipFor.includes(st.r));
+    const p=skipped?{verdict:"na"}:(byI[i]||{verdict:"na"});const v=VERD[p.verdict]?p.verdict:"na";if(tally[v]!=null)tally[v]++;
     const q=p.quote&&tLines.some(l=>norm(l).includes(norm(p.quote)))?p.quote:"";
     const srcs=(Array.isArray(p.src)?p.src:[]).filter(k=>SOURCES[k]).slice(0,2);
     const okOpt=n.opts.find(o=>o[1]==="ok");

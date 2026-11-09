@@ -279,10 +279,16 @@ button{cursor:pointer}
      <div class="before mob-before" id="before-m"></div>
      <h1 id="lv-l">באיזה שלב גילאי תרצו להתאמן?</h1>
      <div class="levels" role="radiogroup" aria-labelledby="lv-l" id="levels"></div>
+     <div class="gend" role="radiogroup" aria-labelledby="r-l">
+      <span id="r-l">מה התפקיד שלך?</span>
+      <button class="pill" role="radio" aria-checked="false" data-r="teacher">מחנך/ת או מורה</button>
+      <button class="pill" role="radio" aria-checked="false" data-r="counselor">יועץ/ת</button>
+      <button class="pill" role="radio" aria-checked="false" data-r="staff">איש צוות אחר</button>
+     </div>
      <div class="gend" role="radiogroup" aria-labelledby="g-l">
       <span id="g-l">איך לפנות אליך?</span>
-      <button class="pill" role="radio" aria-checked="false" data-g="f">מורה</button>
-      <button class="pill" role="radio" aria-checked="false" data-g="m">מורֶה</button>
+      <button class="pill" role="radio" aria-checked="false" data-g="f">בלשון נקבה</button>
+      <button class="pill" role="radio" aria-checked="false" data-g="m">בלשון זכר</button>
      </div>
      <button class="cta" id="start" disabled>מתחילים בתרגול ←</button>
      <button class="ghost" id="resume" hidden>חזרה לשיחה שהתחלתי</button>
