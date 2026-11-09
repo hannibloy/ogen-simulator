@@ -32,7 +32,7 @@ function anchorAvailable(id,used){
   for(const [k,v] of Object.entries(CD().anchors)){if(v.alt===id&&used.has(k))return false;}
   return (a.req||[]).every(r=>used.has(r)||Object.entries(CD().anchors).some(([k,v])=>v.alt===r&&used.has(k)));
 }
-function anchorTurn(id){const t=CD().anchors[id].t;return t.startsWith("#")?{who:"n",text:t.slice(1),anchor:id}:{who:"s",text:t,anchor:id};}
+function anchorTurn(id){const a=CD().anchors[id],t=(st.r!=="teacher"&&a.tGeneral)?a.tGeneral:a.t;return t.startsWith("#")?{who:"n",text:t.slice(1),anchor:id}:{who:"s",text:t,anchor:id};}
 
 /* ---------- בית ---------- */
 $("before-m").innerHTML=$("before-r").innerHTML;
